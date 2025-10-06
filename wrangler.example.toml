@@ -1,0 +1,144 @@
+# Cloudflare Workers 設定ファイル (例)
+# 実際の wrangler.toml を作成する際の参考にしてください
+
+name = "linktraq-api"
+main = "workers/api/index.ts"
+compatibility_date = "2024-01-01"
+
+# アカウント情報
+account_id = "your-cloudflare-account-id"
+
+# Workers プラン (paid = $5/月で無制限リクエスト、unboundedなら無制限CPU時間)
+# workers_dev = true  # 開発環境用サブドメイン使用
+usage_model = "bundled"
+
+# 環境変数 (公開可能な値のみ)
+[vars]
+ENVIRONMENT = "production"
+APP_URL = "https://app.linktraq.com"
+SHORT_URL_DOMAIN = "https://go.linktraq.com"
+
+# ===========================================================
+# シークレット管理
+# ===========================================================
+# 以下の変数は `wrangler secret put` コマンドで設定してください
+# コマンド例:
+#   wrangler secret put SUPABASE_URL
+#   wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+#   wrangler secret put OPENROUTER_API_KEY
+#   wrangler secret put R2_ACCESS_KEY_ID
+#   wrangler secret put R2_SECRET_ACCESS_KEY
+
+# 必要なシークレット一覧:
+# - SUPABASE_URL
+# - SUPABASE_SERVICE_ROLE_KEY
+# - OPENROUTER_API_KEY
+# - R2_ACCESS_KEY_ID
+# - R2_SECRET_ACCESS_KEY
+# - JWT_SECRET
+
+# ===========================================================
+# R2 バインディング (画像ストレージ)
+# ===========================================================
+[[r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "linktraq-images"
+preview_bucket_name = "linktraq-images-dev"
+
+# ===========================================================
+# KV ストレージ (キャッシュ・セッション用、将来実装)
+# ===========================================================
+# [[kv_namespaces]]
+# binding = "CACHE"
+# id = "your-kv-namespace-id"
+# preview_id = "your-preview-kv-namespace-id"
+
+# ===========================================================
+# Durable Objects (リアルタイム機能用、将来実装)
+# ===========================================================
+# [[durable_objects.bindings]]
+# name = "RATE_LIMITER"
+# class_name = "RateLimiter"
+# script_name = "linktraq-api"
+
+# ===========================================================
+# Queue バインディング (投稿スケジューリング用)
+# ===========================================================
+# 投稿スケジューリング用Queue
+[[queues.producers]]
+binding = "POST_QUEUE"
+queue = "post-scheduling-queue"
+
+[[queues.consumers]]
+queue = "post-scheduling-queue"
+max_batch_size = 10          # 1回に10件まで処理
+max_batch_timeout = 30       # 30秒でバッチ処理
+max_retries = 3              # Cloudflare Queue側のリトライ (Workerのリトライとは別)
+dead_letter_queue = "post-dlq"  # Dead Letter Queue (最終的な失敗メッセージ保存)
+
+# Dead Letter Queue (DLQ) - 最終的な失敗メッセージ
+[[queues.producers]]
+binding = "POST_DLQ"
+queue = "post-dlq"
+
+[[queues.consumers]]
+queue = "post-dlq"
+max_batch_size = 5
+max_batch_timeout = 60
+# DLQはリトライしない (手動再送のみ)
+
+# ===========================================================
+# Cron Triggers (定期実行タスク)
+# ===========================================================
+[triggers]
+# X API からアナリティクスを取得 (1時間ごと)
+crons = ["0 * * * *"]
+
+# 月次使用量リセット (毎月1日 00:00 UTC)
+# crons = ["0 0 1 * *"]
+
+# ===========================================================
+# Routes (カスタムドメイン設定)
+# ===========================================================
+routes = [
+  { pattern = "api.linktraq.com/*", zone_name = "linktraq.com" },
+  { pattern = "go.linktraq.com/*", zone_name = "linktraq.com" }
+]
+
+# ===========================================================
+# 環境別設定
+# ===========================================================
+
+# 開発環境
+[env.development]
+name = "linktraq-api-dev"
+vars = { ENVIRONMENT = "development" }
+
+# ステージング環境
+[env.staging]
+name = "linktraq-api-staging"
+vars = { ENVIRONMENT = "staging" }
+routes = [
+  { pattern = "api-staging.linktraq.com/*", zone_name = "linktraq.com" }
+]
+
+# 本番環境 (デフォルト設定を使用)
+# [env.production] は不要 (トップレベル設定が本番環境)
+
+# ===========================================================
+# ビルド設定
+# ===========================================================
+[build]
+command = "npm run build:workers"
+
+[build.upload]
+format = "service-worker"
+
+# ===========================================================
+# 注意事項
+# ===========================================================
+# 1. このファイルを wrangler.toml としてコピーして使用
+# 2. account_id を実際の Cloudflare アカウントID に変更
+# 3. シークレットは wrangler secret put で設定 (このファイルには記載しない)
+# 4. 本番環境の設定は環境変数で上書き可能
+# 5. wrangler.toml.local をローカル設定用に作成可能 (.gitignore に含まれる)
