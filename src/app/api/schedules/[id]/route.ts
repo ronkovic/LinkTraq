@@ -9,8 +9,9 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const supabase = await createClient()
 
@@ -40,7 +41,7 @@ export async function GET(
           )
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('posts.products.user_id', user.id)
       .single()
 
@@ -74,8 +75,9 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const supabase = await createClient()
 
@@ -106,7 +108,7 @@ export async function PATCH(
           )
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('posts.products.user_id', user.id)
       .single()
 
@@ -136,7 +138,7 @@ export async function PATCH(
     const { data: schedule, error } = await supabase
       .from('post_schedules')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', id)
       .select(`
         *,
         posts (
@@ -172,8 +174,9 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const supabase = await createClient()
 
@@ -197,7 +200,7 @@ export async function DELETE(
           )
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('posts.products.user_id', user.id)
       .single()
 
@@ -212,7 +215,7 @@ export async function DELETE(
     const { error } = await supabase
       .from('post_schedules')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (error) {
       console.error('Schedule delete error:', error)

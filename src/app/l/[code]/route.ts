@@ -7,11 +7,12 @@ import { createClient } from '@/lib/supabase/server'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { code: string } }
+  { params }: { params: Promise<{ code: string }> }
 ) {
   try {
+    const { code } = await params
     const supabase = await createClient()
-    const shortCode = params.code
+    const shortCode = code
 
     // アフィリエイトリンク取得
     const { data: link, error: linkError } = await supabase

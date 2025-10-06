@@ -9,9 +9,10 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // 認証チェック
@@ -37,7 +38,7 @@ export async function GET(
           user_id
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('products.user_id', user.id)
       .single()
 
@@ -71,9 +72,10 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // 認証チェック
@@ -103,7 +105,7 @@ export async function PATCH(
           user_id
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('products.user_id', user.id)
       .single()
 
@@ -126,7 +128,7 @@ export async function PATCH(
     const { data: link, error } = await supabase
       .from('affiliate_links')
       .update(updateData)
-      .eq('id', params.id)
+      .eq('id', id)
       .select(`
         *,
         products (
@@ -163,9 +165,10 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const supabase = await createClient()
 
     // 認証チェック
@@ -186,7 +189,7 @@ export async function DELETE(
           user_id
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('products.user_id', user.id)
       .single()
 
@@ -201,7 +204,7 @@ export async function DELETE(
     const { error } = await supabase
       .from('affiliate_links')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (error) {
       console.error('Affiliate link delete error:', error)
