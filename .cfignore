@@ -1,6 +1,0 @@
-# Cloudflare Pages ignore file
-# Exclude large cache files from deployment
-
-.next/cache/
-cache/
-*.pack

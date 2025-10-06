@@ -143,7 +143,6 @@ CREATE TABLE IF NOT EXISTS "link_clicks" (
 CREATE TABLE IF NOT EXISTS "conversions" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"affiliate_link_id" uuid NOT NULL,
-	"user_id" uuid NOT NULL,
 	"commission" numeric(10, 2),
 	"status" "conversion_status" DEFAULT 'pending' NOT NULL,
 	"converted_at" timestamp NOT NULL,
@@ -399,17 +398,7 @@ DO $$ BEGIN
     END IF;
 END $$;
 
--- Conversions → Users
-DO $$ BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint WHERE conname = 'conversions_user_id_users_id_fk'
-    ) THEN
-        ALTER TABLE "conversions"
-        ADD CONSTRAINT "conversions_user_id_users_id_fk"
-        FOREIGN KEY ("user_id") REFERENCES "public"."users"("id")
-        ON DELETE cascade ON UPDATE no action;
-    END IF;
-END $$;
+-- Conversions → Users (removed - user_id can be accessed via affiliate_links)
 
 -- Post failures → Post schedules
 DO $$ BEGIN
